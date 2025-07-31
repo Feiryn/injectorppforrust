@@ -14,8 +14,10 @@ jobs:
         include:
           - os: ubuntu-24.04-arm
             target: armv7-unknown-linux-gnueabihf
+            base_image: raspios_lite:latest
           - os: ubuntu-24.04-arm
             target: thumbv7neon-unknown-linux-gnueabihf
+            base_image: raspios_lite:latest
 
     runs-on: ${{ matrix.os }}
     name: Build & test on ${{ matrix.os }} / ${{ matrix.target }}
