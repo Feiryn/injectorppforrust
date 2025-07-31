@@ -54,8 +54,9 @@ jobs:
       - name: Install ARM toolchain
         if: matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf'
         run: |
+          sudo dpkg --add-architecture armhf
           sudo apt-get update
-          sudo apt-get install -y gcc-arm-linux-gnueabihf
+          sudo apt-get install -y gcc-arm-linux-gnueabihf libssl-dev:armhf pkg-config
 
       # Add Rust target for all targets
       - name: Add Rust target
@@ -66,6 +67,11 @@ jobs:
         env:
           CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
           CARGO_TARGET_THUMBV7NEON_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
+          # OpenSSL configuration for ARM cross-compilation
+          OPENSSL_LIB_DIR: /usr/lib/arm-linux-gnueabihf
+          OPENSSL_INCLUDE_DIR: /usr/include/openssl
+          PKG_CONFIG_ALLOW_CROSS: 1
+          PKG_CONFIG_PATH: /usr/lib/arm-linux-gnueabihf/pkgconfig
         run: |
           if [[ ("${{ matrix.target }}" == "aarch64-unknown-linux-gnu" || "${{ matrix.target }}" == "armv7-unknown-linux-gnueabihf" || "${{ matrix.target }}" == "thumbv7neon-unknown-linux-gnueabihf") && "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             echo "skip"
@@ -78,6 +84,11 @@ jobs:
         env:
           CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
           CARGO_TARGET_THUMBV7NEON_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
+          # OpenSSL configuration for ARM cross-compilation
+          OPENSSL_LIB_DIR: /usr/lib/arm-linux-gnueabihf
+          OPENSSL_INCLUDE_DIR: /usr/include/openssl
+          PKG_CONFIG_ALLOW_CROSS: 1
+          PKG_CONFIG_PATH: /usr/lib/arm-linux-gnueabihf/pkgconfig
         run: |
           if [[ ("${{ matrix.target }}" == "aarch64-unknown-linux-gnu" || "${{ matrix.target }}" == "armv7-unknown-linux-gnueabihf" || "${{ matrix.target }}" == "thumbv7neon-unknown-linux-gnueabihf") && "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             echo "skip"

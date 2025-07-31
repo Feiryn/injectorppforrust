@@ -30,6 +30,3 @@ http-body-util = "0.1"
 hyper-tls = "0.6"
 socket2 = "0.5.10"
 reqwest = "0.12.22"
-
-[target.'cfg(any(target_arch = "arm", target_arch = "aarch64"))'.dev-dependencies]
-openssl = { version = "0.10.73", features = ["vendored"] }
