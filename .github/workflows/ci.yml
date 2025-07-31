@@ -62,16 +62,22 @@ jobs:
       - name: Add Rust target
         run: rustup target add ${{ matrix.target }}
 
-      - name: Build
+      - name: Build (ARM targets)
+        if: matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf'
         shell: bash
         env:
-          CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER: ${{ matrix.target == 'armv7-unknown-linux-gnueabihf' && 'arm-linux-gnueabihf-gcc' || '' }}
-          CARGO_TARGET_THUMBV7NEON_UNKNOWN_LINUX_GNUEABIHF_LINKER: ${{ matrix.target == 'thumbv7neon-unknown-linux-gnueabihf' && 'arm-linux-gnueabihf-gcc' || '' }}
-          # OpenSSL configuration for ARM cross-compilation only
-          OPENSSL_LIB_DIR: ${{ (matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf') && '/usr/lib/arm-linux-gnueabihf' || '' }}
-          OPENSSL_INCLUDE_DIR: ${{ (matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf') && '/usr/include/openssl' || '' }}
-          PKG_CONFIG_ALLOW_CROSS: ${{ (matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf') && '1' || '' }}
-          PKG_CONFIG_PATH: ${{ (matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf') && '/usr/lib/arm-linux-gnueabihf/pkgconfig' || '' }}
+          CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
+          CARGO_TARGET_THUMBV7NEON_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
+          OPENSSL_LIB_DIR: /usr/lib/arm-linux-gnueabihf
+          OPENSSL_INCLUDE_DIR: /usr/include/openssl
+          PKG_CONFIG_ALLOW_CROSS: 1
+          PKG_CONFIG_PATH: /usr/lib/arm-linux-gnueabihf/pkgconfig
+        run: |
+          cargo build --target ${{ matrix.target }} --release
+
+      - name: Build (other targets)
+        if: matrix.target != 'armv7-unknown-linux-gnueabihf' && matrix.target != 'thumbv7neon-unknown-linux-gnueabihf'
+        shell: bash
         run: |
           if [[ ("${{ matrix.target }}" == "aarch64-unknown-linux-gnu" || "${{ matrix.target }}" == "armv7-unknown-linux-gnueabihf" || "${{ matrix.target }}" == "thumbv7neon-unknown-linux-gnueabihf") && "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             echo "skip"
@@ -79,16 +85,22 @@ jobs:
             cargo build --target ${{ matrix.target }} --release
           fi
 
-      - name: Test
+      - name: Test (ARM targets)
+        if: matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf'
         shell: bash
         env:
-          CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER: ${{ matrix.target == 'armv7-unknown-linux-gnueabihf' && 'arm-linux-gnueabihf-gcc' || '' }}
-          CARGO_TARGET_THUMBV7NEON_UNKNOWN_LINUX_GNUEABIHF_LINKER: ${{ matrix.target == 'thumbv7neon-unknown-linux-gnueabihf' && 'arm-linux-gnueabihf-gcc' || '' }}
-          # OpenSSL configuration for ARM cross-compilation only
-          OPENSSL_LIB_DIR: ${{ (matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf') && '/usr/lib/arm-linux-gnueabihf' || '' }}
-          OPENSSL_INCLUDE_DIR: ${{ (matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf') && '/usr/include/openssl' || '' }}
-          PKG_CONFIG_ALLOW_CROSS: ${{ (matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf') && '1' || '' }}
-          PKG_CONFIG_PATH: ${{ (matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf') && '/usr/lib/arm-linux-gnueabihf/pkgconfig' || '' }}
+          CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
+          CARGO_TARGET_THUMBV7NEON_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
+          OPENSSL_LIB_DIR: /usr/lib/arm-linux-gnueabihf
+          OPENSSL_INCLUDE_DIR: /usr/include/openssl
+          PKG_CONFIG_ALLOW_CROSS: 1
+          PKG_CONFIG_PATH: /usr/lib/arm-linux-gnueabihf/pkgconfig
+        run: |
+          cargo test --target ${{ matrix.target }} -- --nocapture
+
+      - name: Test (other targets)
+        if: matrix.target != 'armv7-unknown-linux-gnueabihf' && matrix.target != 'thumbv7neon-unknown-linux-gnueabihf'
+        shell: bash
         run: |
           if [[ ("${{ matrix.target }}" == "aarch64-unknown-linux-gnu" || "${{ matrix.target }}" == "armv7-unknown-linux-gnueabihf" || "${{ matrix.target }}" == "thumbv7neon-unknown-linux-gnueabihf") && "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             echo "skip"
