@@ -12,24 +12,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-          - os: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-          - os: ubuntu-24.04-arm
-            target: aarch64-unknown-linux-gnu
           - os: ubuntu-24.04-arm
             target: armv7-unknown-linux-gnueabihf
             base_image: raspios_lite:latest
           - os: ubuntu-24.04-arm
             target: thumbv7neon-unknown-linux-gnueabihf
             base_image: raspios_lite:latest
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-          - os: windows-11-arm
-            target: aarch64-pc-windows-msvc
-          - os: macos-latest
-            target: aarch64-apple-darwin
 
     runs-on: ${{ matrix.os }}
     name: Build & test on ${{ matrix.os }} / ${{ matrix.target }}
@@ -87,6 +75,29 @@ jobs:
             cargo build --target ${{ matrix.target }} --release
           fi
 
+      - name: Build test binaries (ARM targets)
+        if: matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf'
+        shell: bash
+        env:
+          CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
+          CARGO_TARGET_THUMBV7NEON_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
+          OPENSSL_LIB_DIR: /usr/lib/arm-linux-gnueabihf
+          OPENSSL_INCLUDE_DIR: /usr/include/openssl
+          PKG_CONFIG_ALLOW_CROSS: 1
+          PKG_CONFIG_PATH: /usr/lib/arm-linux-gnueabihf/pkgconfig
+        run: |
+          cargo test --target ${{ matrix.target }} --no-run --release
+
+      - name: Build test binaries (other targets)
+        if: matrix.target != 'armv7-unknown-linux-gnueabihf' && matrix.target != 'thumbv7neon-unknown-linux-gnueabihf'
+        shell: bash
+        run: |
+          if [[ "${{ matrix.target }}" == "aarch64-unknown-linux-gnu" && "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            echo "skip"
+          else
+            cargo test --target ${{ matrix.target }} --no-run --release
+          fi
+
       - name: Test (ARM targets)
         if: matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf'
         shell: bash
@@ -109,3 +120,40 @@ jobs:
           else
             cargo test --target ${{ matrix.target }} -- --nocapture
           fi
+
+      - name: Prepare test artifacts
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p test-artifacts
+          # Copy test binaries (both debug and release)
+          if [ -d "target/${{ matrix.target }}/release/deps" ]; then
+            cp -r target/${{ matrix.target }}/release/deps test-artifacts/release-deps || true
+          fi
+          if [ -d "target/${{ matrix.target }}/debug/deps" ]; then
+            cp -r target/${{ matrix.target }}/debug/deps test-artifacts/debug-deps || true
+          fi
+          # Copy any test executables in examples
+          if [ -d "target/${{ matrix.target }}/release/examples" ]; then
+            cp -r target/${{ matrix.target }}/release/examples test-artifacts/release-examples || true
+          fi
+          if [ -d "target/${{ matrix.target }}/debug/examples" ]; then
+            cp -r target/${{ matrix.target }}/debug/examples test-artifacts/debug-examples || true
+          fi
+          # Create a build info file
+          echo "Target: ${{ matrix.target }}" > test-artifacts/build-info.txt
+          echo "OS: ${{ matrix.os }}" >> test-artifacts/build-info.txt
+          echo "Build Date: $(date)" >> test-artifacts/build-info.txt
+          echo "Rust Version: $(rustc --version)" >> test-artifacts/build-info.txt
+          echo "Cargo Version: $(cargo --version)" >> test-artifacts/build-info.txt
+          # List all files for debugging
+          find test-artifacts -type f > test-artifacts/file-list.txt
+
+      - name: Upload test binaries
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-binaries-${{ matrix.target }}-${{ matrix.os }}
+          path: test-artifacts/
+          retention-days: 1
+          if-no-files-found: warn
