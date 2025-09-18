@@ -122,6 +122,7 @@ jobs:
           fi
 
       - name: Prepare test artifacts
+        if: always()
         shell: bash
         run: |
           mkdir -p test-artifacts
@@ -149,6 +150,7 @@ jobs:
           find test-artifacts -type f > test-artifacts/file-list.txt
 
       - name: Upload test binaries
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-binaries-${{ matrix.target }}-${{ matrix.os }}
